@@ -3,18 +3,25 @@ import os
 import unittest
 from log_analyzer import url_sort, parse_config, is_report_created, search_log, main
 
+
 class DefaultTestCase(unittest.TestCase):
 
-    default_config = {
-        "REPORT_SIZE": 100,
-        "REPORT_DIR": "./reports",
-        "LOG_DIR": "./log",
-        'REGEXP_TEMPLATE': '^(?P<remote_addr>\d+\.\d+\.\d+\.\d+)\s(?P<remote_user>\w+|-)\s+(?P<http_x_real_ip>.+|-)\s+'
-                           '\[(?P<time_local>.+)\]\s+"\w+\s(?P<request>.+)HTTP\/\d\.\d"\s(?P<status>\d+)\s'
-                           '(?P<body_bytes_sent>\d+)\s"(?P<http_referer>.+)"\s"(?P<http_user_agent>.+)"\s'
-                           '"(?P<http_x_forwarded_for>.+)"\s"(?P<http_X_REQUEST_ID>.+)"\s'
-                           '"(?P<http_X_RB_USER>.+)"\s(?P<request_time>\d+\.\d+)$',
-    }
+    def __init__(self, *args, **kwargs):
+
+        super(DefaultTestCase, self).__init__(*args, **kwargs)
+        self.default_config = {
+            "REPORT_SIZE": 100,
+            "REPORT_DIR": "./reports",
+            "LOG_DIR": "./log",
+            'REGEXP_TEMPLATE': '^(?P<remote_addr>\d+\.\d+\.\d+\.\d+)\s(?P<remote_user>\w+|-)\s+(?P<http_x_real_ip>.+|-)\s+'
+                               '\[(?P<time_local>.+)\]\s+"\w+\s(?P<request>.+)HTTP\/\d\.\d"\s(?P<status>\d+)\s'
+                               '(?P<body_bytes_sent>\d+)\s"(?P<http_referer>.+)"\s"(?P<http_user_agent>.+)"\s'
+                               '"(?P<http_x_forwarded_for>.+)"\s"(?P<http_X_REQUEST_ID>.+)"\s'
+                               '"(?P<http_X_RB_USER>.+)"\s(?P<request_time>\d+\.\d+)$',
+        }
+
+
+
 
     def test_url_sort(self):
         data = {'/api/v2/banner/25019354 ':
@@ -41,7 +48,7 @@ class DefaultTestCase(unittest.TestCase):
                        'DEBUG': 'True'}
 
         with open('tests/files/config.txt') as file_config:
-            result = parse_config(file_config, DefaultTestCase.default_config)
+            result = parse_config(file_config, self.default_config)
             self.assertDictEqual(result, result_conf)
 
     def test_is_report_created(self):
@@ -66,7 +73,7 @@ class DefaultTestCase(unittest.TestCase):
         self.assertEqual(finded_log, "nginx-access-ui.log-20160630")
 
     def test_main(self):
-        main(DefaultTestCase.default_config)
+        main(self.default_config)
 
     def tearDown(self):
         if os.path.exists("reports/report-2016.06.30.html"):
