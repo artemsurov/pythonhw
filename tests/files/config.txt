@@ -1,0 +1,2 @@
+DEBUG=True
+REGEXP_TEMPLATE=fuuuu
