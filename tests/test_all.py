@@ -11,16 +11,14 @@ class DefaultTestCase(unittest.TestCase):
         super(DefaultTestCase, self).__init__(*args, **kwargs)
         self.default_config = {
             "REPORT_SIZE": 100,
-            "REPORT_DIR": "./reports",
-            "LOG_DIR": "./log",
+            "REPORT_DIR": "tests/report",
+            "LOG_DIR": "tests/log",
             'REGEXP_TEMPLATE': '^(?P<remote_addr>\d+\.\d+\.\d+\.\d+)\s(?P<remote_user>\w+|-)\s+(?P<http_x_real_ip>.+|-)\s+'
                                '\[(?P<time_local>.+)\]\s+"\w+\s(?P<request>.+)HTTP\/\d\.\d"\s(?P<status>\d+)\s'
                                '(?P<body_bytes_sent>\d+)\s"(?P<http_referer>.+)"\s"(?P<http_user_agent>.+)"\s'
                                '"(?P<http_x_forwarded_for>.+)"\s"(?P<http_X_REQUEST_ID>.+)"\s'
                                '"(?P<http_X_RB_USER>.+)"\s(?P<request_time>\d+\.\d+)$',
         }
-
-
 
 
     def test_url_sort(self):
@@ -43,11 +41,15 @@ class DefaultTestCase(unittest.TestCase):
         self.assertListEqual(result, expected)
 
     def test_parse_config(self):
-        result_conf = {'REPORT_SIZE': 100, 'REPORT_DIR': './reports', 'LOG_DIR': './log',
-                       'REGEXP_TEMPLATE': 'fuuuu',
+        result_conf = {'REPORT_SIZE': 100, 'REPORT_DIR': 'tests/report', 'LOG_DIR': 'tests/log',
+                       'REGEXP_TEMPLATE': '^(?P<remote_addr>\d+\.\d+\.\d+\.\d+)\s(?P<remote_user>\w+|-)\s+(?P<http_x_real_ip>.+|-)\s+'
+                               '\[(?P<time_local>.+)\]\s+"\w+\s(?P<request>.+)HTTP\/\d\.\d"\s(?P<status>\d+)\s'
+                               '(?P<body_bytes_sent>\d+)\s"(?P<http_referer>.+)"\s"(?P<http_user_agent>.+)"\s'
+                               '"(?P<http_x_forwarded_for>.+)"\s"(?P<http_X_REQUEST_ID>.+)"\s'
+                               '"(?P<http_X_RB_USER>.+)"\s(?P<request_time>\d+\.\d+)$',
                        'DEBUG': 'True'}
 
-        with open('tests/files/config.txt') as file_config:
+        with open('tests/config.txt') as file_config:
             result = parse_config(file_config, self.default_config)
             self.assertDictEqual(result, result_conf)
 
