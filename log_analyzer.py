@@ -178,19 +178,19 @@ def url_sort(data: dict, size: int) -> list:
 
 
 def main(conf):
-    try:
-        log_file = search_not_processed_log(conf['LOG_DIR'], conf["REPORT_DIR"])
-        if log_file is None:
-            logging.info("Finished")
-        else:
-            data = agregate_data(conf, log_file)
-            generate_report(conf, data, log_file)
-    except Exception:
-        logging.exception("An Exception occurred!")
+    log_file = search_not_processed_log(conf['LOG_DIR'], conf["REPORT_DIR"])
+    if log_file is None:
+        logging.info("Finished")
+    else:
+        data = agregate_data(conf, log_file)
+        generate_report(conf, data, log_file)
 
 
 if __name__ == "__main__":
-        args = parse_args()
-        updated_config = parse_config(args.config, config)
-        init_logging(updated_config)
+    args = parse_args()
+    updated_config = parse_config(args.config, config)
+    init_logging(updated_config)
+    try:
         main(updated_config)
+    except Exception:
+        logging.exception("An Exception occurred!")
