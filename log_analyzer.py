@@ -7,6 +7,7 @@
 #                     '"$http_user_agent" "$http_x_forwarded_for" "$http_X_REQUEST_ID" "$http_X_RB_USER" '
 #                     '$request_time';
 import argparse
+import configparser
 import gzip
 import json
 import re
@@ -31,26 +32,22 @@ config = {
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Process log files')
-    parser.add_argument('--config', help='Path to config', default="config.txt", type=open)
+    parser.add_argument('--config', help='Path to config', default="config.ini", type=open)
     args = parser.parse_args()
     return args
 
 
-def parse_config(config_file, config):
-    new_conf = {}
-    updated_config = copy.deepcopy(config)
-    for line in config_file:
-        line = line.strip()
-        if line == "":
-            break
-        key, value = line.split('=')
-        new_conf[key] = value
-    updated_config.update(new_conf)
+def parse_config(config_file, old_config):
+    updated_config = copy.deepcopy(old_config)
+    config = configparser.ConfigParser()
+    config.optionxform = str
+    config.read_file(config_file)
+    updated_config.update(config['DEFAULT'])
     return updated_config
 
 
 def init_logging(config):
-    loglevel = logging.DEBUG if config.get("DEBUG", False) else logging.INFO
+    loglevel = logging.DEBUG if bool(config.get("DEBUG", False)) else logging.INFO
     logfile = config.get('LOGGING_FILE', None)
     logging.basicConfig(filename=logfile, level=loglevel,
                         format='[%(asctime)s] %(levelname).1s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')

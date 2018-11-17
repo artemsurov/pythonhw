@@ -49,7 +49,7 @@ class DefaultTestCase(unittest.TestCase):
                                '"(?P<http_X_RB_USER>.+)"\s(?P<request_time>\d+\.\d+)$',
                        'DEBUG': 'True'}
 
-        with open('tests/config.txt') as file_config:
+        with open('tests/config.ini') as file_config:
             result = parse_config(file_config, self.default_config)
             self.assertDictEqual(result, result_conf)
 
