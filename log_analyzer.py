@@ -93,12 +93,12 @@ def is_report_created(files, date):
     return False
 
 
-def agregate_data(config, log):
+def agregate_data(parser):
     big_dic = {}
     general_request_count = 0
     general_request_time = 0
 
-    for data in logs_parser(config, log):
+    for data in parser:
         request = data['request']
         request_time = float(data['request_time'])
 
@@ -179,7 +179,8 @@ def main(conf):
     if log_file is None:
         logging.info("Finished")
     else:
-        data = agregate_data(conf, log_file)
+        parser = logs_parser(conf, log_file)
+        data = agregate_data(parser)
         generate_report(conf, data, log_file)
 
 

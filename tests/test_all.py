@@ -78,5 +78,5 @@ class DefaultTestCase(unittest.TestCase):
         main(self.default_config)
 
     def tearDown(self):
-        if os.path.exists("reports/report-2016.06.30.html"):
-            os.remove("reports/report-2016.06.30.html")
+        if os.path.exists("tests/report/report-2016.06.30.html"):
+            os.remove("tests/report/report-2016.06.30.html")
