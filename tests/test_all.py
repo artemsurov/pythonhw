@@ -1,13 +1,15 @@
 import datetime
 import os
 import unittest
+from collections import namedtuple
+from mock import patch
+
 from log_analyzer import url_sort, parse_config, is_report_created, search_log, main
 
 
 class DefaultTestCase(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
-
         super(DefaultTestCase, self).__init__(*args, **kwargs)
         self.default_config = {
             "REPORT_SIZE": 100,
@@ -19,7 +21,6 @@ class DefaultTestCase(unittest.TestCase):
                                '"(?P<http_x_forwarded_for>.+)"\s"(?P<http_X_REQUEST_ID>.+)"\s'
                                '"(?P<http_X_RB_USER>.+)"\s(?P<request_time>\d+\.\d+)$',
         }
-
 
     def test_url_sort(self):
         data = {'/api/v2/banner/25019354 ':
@@ -43,10 +44,10 @@ class DefaultTestCase(unittest.TestCase):
     def test_parse_config(self):
         result_conf = {'REPORT_SIZE': 100, 'REPORT_DIR': 'tests/report', 'LOG_DIR': 'tests/log',
                        'REGEXP_TEMPLATE': '^(?P<remote_addr>\d+\.\d+\.\d+\.\d+)\s(?P<remote_user>\w+|-)\s+(?P<http_x_real_ip>.+|-)\s+'
-                               '\[(?P<time_local>.+)\]\s+"\w+\s(?P<request>.+)HTTP\/\d\.\d"\s(?P<status>\d+)\s'
-                               '(?P<body_bytes_sent>\d+)\s"(?P<http_referer>.+)"\s"(?P<http_user_agent>.+)"\s'
-                               '"(?P<http_x_forwarded_for>.+)"\s"(?P<http_X_REQUEST_ID>.+)"\s'
-                               '"(?P<http_X_RB_USER>.+)"\s(?P<request_time>\d+\.\d+)$',
+                                          '\[(?P<time_local>.+)\]\s+"\w+\s(?P<request>.+)HTTP\/\d\.\d"\s(?P<status>\d+)\s'
+                                          '(?P<body_bytes_sent>\d+)\s"(?P<http_referer>.+)"\s"(?P<http_user_agent>.+)"\s'
+                                          '"(?P<http_x_forwarded_for>.+)"\s"(?P<http_X_REQUEST_ID>.+)"\s'
+                                          '"(?P<http_X_RB_USER>.+)"\s(?P<request_time>\d+\.\d+)$',
                        'DEBUG': 'True'}
 
         with open('tests/config.ini') as file_config:
@@ -54,11 +55,22 @@ class DefaultTestCase(unittest.TestCase):
             self.assertDictEqual(result, result_conf)
 
     def test_is_report_created(self):
-        files = ['report-2017.06.30.html']
+        file_name_for_processing = namedtuple('FileName', 'path date ext')
         date = datetime.datetime(2017, 6, 30)
-        self.assertTrue(is_report_created(files, date))
-        files = ['report-2017.06.29.html']
-        self.assertFalse(is_report_created(files, date))
+        file = file_name_for_processing('nginx-access-ui.log-20160630.gz', date, 'gz')
+
+        with patch('os.listdir') as mocked_listdir:
+            with patch('os.path.isdir') as mocked_isdir:
+                mocked_listdir.return_value = ['report-2017.06.30.html']
+                mocked_isdir.side_effect = [False]
+                self.assertTrue(is_report_created('tests/report', file))
+
+        with patch('os.listdir') as mocked_listdir:
+            with patch('os.path.isdir') as mocked_isdir:
+                mocked_listdir.return_value = ['report-2017.06.29.html']
+                mocked_isdir.side_effect = [False]
+
+        self.assertFalse(is_report_created('tests/report', file))
 
     def test_search_log(self):
         # Проверка, что не возьмет лишнего

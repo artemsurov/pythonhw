@@ -53,18 +53,13 @@ def init_logging(config):
                         format='[%(asctime)s] %(levelname).1s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def search_not_processed_log(log_dir, report_dir):
+def search_not_processed_log(log_dir):
     path = os.path.abspath(log_dir)
     files = os.listdir(path)
     file_name_for_processing = namedtuple('FileName', 'path date ext')
     tmp_file_name, recent_date, extension = search_log(files)
-    if tmp_file_name == "":
-        logging.info(f"Logs not found in {path}")
-        return None
-    if not is_report_created(os.listdir(report_dir), recent_date):
+    if tmp_file_name != "":
         return file_name_for_processing(path + "/" + tmp_file_name, recent_date, extension)
-    else:
-        return None
 
 
 def search_log(files):
@@ -84,10 +79,11 @@ def search_log(files):
     return tmp_file_name, recent_date, extension
 
 
-def is_report_created(files, date):
-    data = date.strftime("%Y.%m.%d")
-    file = f'report-{data}.html'
-    if file in files:
+def is_report_created(report_dir, file):
+    files = os.listdir(report_dir)
+    data = file.date.strftime("%Y.%m.%d")
+    file_report = f'report-{data}.html'
+    if file_report in files:
         logging.info(f"Logs file {file} already been processing")
         return True
     return False
@@ -175,8 +171,12 @@ def url_sort(data: dict, size: int) -> list:
 
 
 def main(conf):
-    log_file = search_not_processed_log(conf['LOG_DIR'], conf["REPORT_DIR"])
-    if log_file is None:
+    log_file = search_not_processed_log(conf['LOG_DIR'])
+    if not log_file:
+        logging.info(f"Logs not found in {path}")
+        return 0
+    created = is_report_created(conf["REPORT_DIR"], log_file)
+    if created:
         logging.info("Finished")
     else:
         parser = logs_parser(conf, log_file)
