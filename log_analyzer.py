@@ -160,7 +160,8 @@ def generate_report(config, data, log):
     with open('report.html', 'r') as report:
         text = report.read()
         s = Template(text)
-        outdata = s.safe_substitute(table_json="[" + ",".join([json.dumps(x) for x in sorted_data]) + "]")
+        tj1 = json.dumps(sorted_data)
+        outdata = s.safe_substitute(table_json=tj1)
         with open(f'{report_dir}/report-{data}.html', 'wt') as newreport:
             newreport.writelines(outdata)
 
