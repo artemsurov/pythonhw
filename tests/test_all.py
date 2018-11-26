@@ -4,7 +4,7 @@ import unittest
 from collections import namedtuple
 from mock import patch
 
-from log_analyzer import url_sort, parse_config, is_report_created, search_log, main
+from log_analyzer import url_sort, parse_config, is_report_created, main
 
 
 class DefaultTestCase(unittest.TestCase):
@@ -59,32 +59,13 @@ class DefaultTestCase(unittest.TestCase):
         date = datetime.datetime(2017, 6, 30)
         file = file_name_for_processing('nginx-access-ui.log-20160630.gz', date, 'gz')
 
-        with patch('os.listdir') as mocked_listdir:
-            with patch('os.path.isdir') as mocked_isdir:
-                mocked_listdir.return_value = ['report-2017.06.30.html']
-                mocked_isdir.side_effect = [False]
-                self.assertTrue(is_report_created('tests/report', file))
+        with patch('os.path.exists') as mocked_exists:
+            mocked_exists.return_value = True
+            self.assertTrue(is_report_created('tests/report', file))
 
-        with patch('os.listdir') as mocked_listdir:
-            with patch('os.path.isdir') as mocked_isdir:
-                mocked_listdir.return_value = ['report-2017.06.29.html']
-                mocked_isdir.side_effect = [False]
-
-        self.assertFalse(is_report_created('tests/report', file))
-
-    def test_search_log(self):
-        # Проверка, что не возьмет лишнего
-        files = ['nginx-access-ui.log-20160630.bz']
-        finded_log, date, ext = search_log(files)
-        self.assertEqual(finded_log, "")
-        # Тест,что возьмет недавнюю дату
-        files = ['nginx-access-ui.log-20160630.gz', 'nginx-access-ui.log-20160629.gz']
-        finded_log, date, ext = search_log(files)
-        self.assertEqual(finded_log, "nginx-access-ui.log-20160630.gz")
-        # Тест,что возьмет недавнюю дату даже у plain текста
-        files = ['nginx-access-ui.log-20160630', 'nginx-access-ui.log-20160629.gz']
-        finded_log, date, ext = search_log(files)
-        self.assertEqual(finded_log, "nginx-access-ui.log-20160630")
+        with patch('os.path.exists') as mocked_exists:
+            mocked_exists.return_value = False
+            self.assertFalse(is_report_created('tests/report', file))
 
     def test_main(self):
         main(self.default_config)

@@ -17,6 +17,7 @@ import copy
 import datetime
 from collections import namedtuple
 from string import Template
+import pathlib
 
 config = {
     "REPORT_SIZE": 1000,
@@ -54,15 +55,11 @@ def init_logging(config):
 
 
 def search_not_processed_log(log_dir):
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
     path = os.path.abspath(log_dir)
     files = os.listdir(path)
     file_name_for_processing = namedtuple('FileName', 'path date ext')
-    tmp_file_name, recent_date, extension = search_log(files)
-    if tmp_file_name != "":
-        return file_name_for_processing(path + "/" + tmp_file_name, recent_date, extension)
-
-
-def search_log(files):
     re_pattern = "nginx-access-ui.log" + "-(?P<data>\d{8})(\.(?P<ext>gz))?$"
     recent_date = datetime.datetime(1, 1, 1)
     extension = ""
@@ -76,20 +73,20 @@ def search_log(files):
                 tmp_file_name = file
                 recent_date = date
                 extension = matched_date.group('ext')
-    return tmp_file_name, recent_date, extension
+    if not tmp_file_name:
+        return file_name_for_processing(str(pathlib.Path(path) / tmp_file_name), recent_date, extension)
 
 
 def is_report_created(report_dir, file):
-    files = os.listdir(report_dir)
     data = file.date.strftime("%Y.%m.%d")
     file_report = f'report-{data}.html'
-    if file_report in files:
+    if os.path.exists(pathlib.Path(report_dir) / file_report):
         logging.info(f"Logs file {file} already been processing")
         return True
     return False
 
 
-def agregate_data(parser):
+def aggregate_data(parser):
     big_dic = {}
     general_request_count = 0
     general_request_time = 0
@@ -134,10 +131,7 @@ def logs_parser(config, log):
     pattern = re.compile(config['REGEXP_TEMPLATE'])
     line_count = 0
     error_line = 0
-    if log.ext == "gz":
-        func_open = gzip.open
-    else:
-        func_open = open
+    func_open = gzip.open if log.ext == "gz" else open
     with func_open(log.path, 'rt') as file:
         for line in file:
             line_count += 1
@@ -172,17 +166,18 @@ def url_sort(data: dict, size: int) -> list:
 
 
 def main(conf):
-    log_file = search_not_processed_log(conf['LOG_DIR'])
+    log_dir = conf['LOG_DIR']
+    log_file = search_not_processed_log(log_dir)
     if not log_file:
-        logging.info(f"Logs not found in {path}")
+        logging.info(f"Logs not found in {log_dir}")
         return 0
     created = is_report_created(conf["REPORT_DIR"], log_file)
     if created:
         logging.info("Finished")
-    else:
-        parser = logs_parser(conf, log_file)
-        data = agregate_data(parser)
-        generate_report(conf, data, log_file)
+        return 0
+    parser = logs_parser(conf, log_file)
+    data = aggregate_data(parser)
+    generate_report(conf, data, log_file)
 
 
 if __name__ == "__main__":
