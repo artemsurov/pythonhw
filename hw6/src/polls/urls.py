@@ -1,11 +1,11 @@
 from django.urls import path
 
-from .views import index, detail, vote, results
+from .views import index, detail, vote, results, IndexView, DetailView, ResultView
 
 urlpatterns = [
-    path("", index, name="index"),
-    path("<int:qid>/", detail, name="detail"),
+    path("", IndexView.as_view(), name="index"),
+    path("<int:pk>/", DetailView.as_view(), name="detail"),
     path("<int:qid>/vote/", vote, name="vote"),
-    path("<int:qid>/results/", results, name="results")
+    path("<int:pk>/results/", ResultView.as_view(), name="results")
 
 ]
