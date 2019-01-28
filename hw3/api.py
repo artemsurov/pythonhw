@@ -9,6 +9,8 @@ import hashlib
 import uuid
 from optparse import OptionParser
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+from collections import OrderedDict
+import copy
 
 SALT = "Otus"
 ADMIN_LOGIN = "admin"
@@ -36,44 +38,148 @@ GENDERS = {
 }
 
 
-class CharField(object):
-    pass
+class Field(object):
+    def __init__(self, required=False, nullable=False):
+        self.required = required
+        self.nullable = nullable
+
+    def clean(self, value):
+        clean_value = self.to_python(value)
+        self.validate(clean_value)
+
+    def to_python(self, value):
+        return value
+
+    def validate(self, value):
+        if self.required is True and value is None:
+            raise Exception("Value requred!")
+        elif self.nullable is False and value is None:
+            raise Exception("Value shouldn't be empty")
 
 
-class ArgumentsField(object):
-    pass
+class CharField(Field):
+
+    def to_python(self, value):
+        return str(value)
+
+
+class ArgumentsField(Field):
+
+    def __init__(self, class_name, **kwargs):
+        self.class_name = class_name
+        super(ArgumentsField,self).__init__(**kwargs)
+
+    @classmethod
+    def register_method(cls, *clasess):
+        cls.arguments_clasess = clasess
+
+    def validate(self, value):
+        method_name
 
 
 class EmailField(CharField):
+    def validate(self, value):
+        if "@" not in value:
+            raise Exception("EmailField must contain '@' ")
+
+
+class PhoneField(Field):
+    def to_python(self, value):
+        if value is None:
+            return ""
+        elif isinstance(value, int):
+            return str(value)
+        elif isinstance(value, str):
+            return value
+        else:
+            raise Exception("Value is not string and not integer")
+
+    def validate(self, value):
+        if value == "":
+            return
+        elif len(value) != 11 and value[0] != '7':
+            raise Exception('PhoneField value is < 11')
+
+
+class DateField(Field):
+
+    def to_python(self, value):
+        return datetime.datetime.strptime(value, "%Y%:%m:%d").date()
+
+
+class BirthDayField(DateField):
+
+    def validate(self, value):
+        if value > datetime.timedelta(days=365 * 70):
+            raise Exception("Atention! Tooo oldd")
+
+
+class GenderField(Field):
+    def to_python(self, value):
+        return int(value)
+
+    def validate(self, value):
+        if value not in GENDERS:
+            raise Exception("GenderField must contain only 3 genders")
+
+
+class ClientIDsField(Field):
+
+    def validate(self, value):
+
+        if not isinstance(value, list):
+            raise Exception('ClientIDsField type error')
+
+        elif len(value) == 0:
+            raise Exception('ClientIDsField is required')
+
+        elif not all(isinstance(i, int) for i in value):
+            raise Exception('ClientIDsField elements of list must be integer')
+
+
+class Meta(type): #todo  переделать, чтобы работал с классами internal
+    def __new__(mcs, name, bases, attrs):
+        current_fields = []
+        for key, value in list(attrs.items()):
+            if isinstance(value, Field):
+                current_fields.append((key, value))
+                attrs.pop(key)
+        attrs['declared_fields'] = OrderedDict(current_fields)
+
+        new_class = super(Meta, mcs).__new__(mcs, name, bases, attrs)
+
+        return new_class
+
+
+class Base(object):
+    def __init__(self, data):
+        self.data = data
+        self.fields = copy.deepcopy(self.declared_field)
+
+    def is_valid(self):
+        for name, class_field in self.fields.items():
+            value = self.data.get(name)
+            if isinstance(class_field, ArgumentsField):
+                class_field.register_method(OnlineScoreRequest, ClientsInterestsRequest)
+
+            else:
+                class_field.clean(value)
+            self.cleaned_data[name] = value
+
+
+class Request(Base, metaclass=Meta):
     pass
 
 
-class PhoneField(object):
-    pass
-
-
-class DateField(object):
-    pass
-
-
-class BirthDayField(object):
-    pass
-
-
-class GenderField(object):
-    pass
-
-
-class ClientIDsField(object):
-    pass
-
-
-class ClientsInterestsRequest(object):
+class ClientsInterestsRequest(Request):
     client_ids = ClientIDsField(required=True)
     date = DateField(required=False, nullable=True)
 
+    class Internal(object): #todo использовать класс Validate, как отметку для метакласса, что эти поля нужно валидировать отдельно
+        name = 'clients_interests'
 
-class OnlineScoreRequest(object):
+
+class OnlineScoreRequest(Request):
     first_name = CharField(required=False, nullable=True)
     last_name = CharField(required=False, nullable=True)
     email = EmailField(required=False, nullable=True)
@@ -81,8 +187,11 @@ class OnlineScoreRequest(object):
     birthday = BirthDayField(required=False, nullable=True)
     gender = GenderField(required=False, nullable=True)
 
+    class Internal(object):
+        name = 'online_score'
 
-class MethodRequest(object):
+
+class MethodRequest(Request):
     account = CharField(required=False, nullable=True)
     login = CharField(required=True, nullable=True)
     token = CharField(required=True, nullable=True)
@@ -103,8 +212,9 @@ def check_auth(request):
         return True
     return False
 
+
 """
-работаетм с этой функцией
+работаем с этой функцией
 надо добавить валидацию поленй, как у джанги forms
 MethodRequest(request) - на выходе получаю валидный реквест
 во время вызова MethodRequest запускается мета класс который запустит
@@ -112,8 +222,14 @@ MethodRequest(request) - на выходе получаю валидный ре�
 потом валидный request передается check_auth
 и считается скор с помощью scoring.py
 """
+
+
 def method_handler(request, ctx, store):
     response, code = None, None
+    method = MethodRequest(request)
+    if method.is_valid():
+        method.cleaned_data
+
     return response, code
 
 
